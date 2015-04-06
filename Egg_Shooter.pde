@@ -113,7 +113,10 @@ void loop() {
     boolean button_pressed = ( digitalRead(shooters[i].button_pin) == LOW );// LOW means the switch is closed.
     if (button_pressed) {
       led_2 = true;
-      fuelSignal(i, 1, !last_button_state[i]);
+      // send the signal immediately if this is the first loop since state transition
+      // send the signal periodically otherwise.
+      fuelSignal(i, 1, !last_button_state[i]); // fuel on
+      purgeSignal(i, 0, !last_button_state[i]); // purge off
     } else {
       if ( last_button_state[i] ) { // button was on but is now off
         led_3 = true;
