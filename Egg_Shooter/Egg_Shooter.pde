@@ -6,7 +6,7 @@ const int NUM_SHOOTERS = 6;
 const unsigned long MIN_PURGE_DELAY = 500; // milliseconds
 const unsigned long MAX_PURGE_DELAY = 1500; // milliseconds
 const unsigned long SIGNAL_INTERVAL = 300; //milliseconds
-const unsigned long ACTIVITY_BLINK_TIME = 60; //milliseconds.  how long to modulate the activity indicator when serial messages are sent.
+const unsigned long ACTIVITY_BLINK_TIME = 50; //milliseconds.  how long to modulate the activity indicator when serial messages are sent.
 
 // Pins for LEDs
 const int LED_1 = 13;
@@ -90,6 +90,7 @@ void setup() {
     pinMode(shooters[i].button_pin, INPUT);
     digitalWrite(shooters[i].button_pin, HIGH);  // This activates the internal pull-up resistor.
     last_button_state[i] = (digitalRead(shooters[i].button_pin) == LOW);
+    button_off_time[i] = millis() - 1000; // Prevents purge valves from firing on boot.
   }
 }
 
@@ -128,7 +129,9 @@ void loop() {
           led_3 = true;
           purgeSignal(i, 1, false);
         } else {
-          purgeSignal(i, 0, true);
+          if (! purge_button_pressed ) {
+            git purgeSignal(i, 0, true);
+          }
         }
       }
     }
@@ -145,7 +148,7 @@ void sendSignal(int shooter_idx, String address, int value, unsigned long last_s
     Serial.print("!" + address);
     Serial.print(value);
     Serial.print(".");
-    Serial.print("\n");
+    Serial.print("\n\r");
     last_signal_sent[shooter_idx] = millis();
     activity_until = millis() + ACTIVITY_BLINK_TIME;
   } 
@@ -167,7 +170,8 @@ void purgeSignal(int shooter_idx, int value, boolean now) {
     String address = shooters[shooter_idx].purge_address;
     unsigned long last_signal_time = last_signal_sent[shooter_idx];
     sendSignal( shooter_idx, address, value, last_signal_time, now);
-    last_purge_valve_state[shooter_idx] = (value ==  0);
+  
+    last_purge_valve_state[shooter_idx] = (value > 0);
   }
 }
 
