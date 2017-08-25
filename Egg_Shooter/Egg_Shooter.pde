@@ -130,7 +130,7 @@ void loop() {
           purgeSignal(i, 1, false);
         } else {
           if (! purge_button_pressed ) {
-            git purgeSignal(i, 0, true);
+            purgeSignal(i, 0, true);
           }
         }
       }
