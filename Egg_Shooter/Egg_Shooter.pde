@@ -66,6 +66,7 @@ unsigned long last_purge_all_signal = 0;
 
 boolean last_fuel_valve_state[NUM_SHOOTERS];
 boolean last_purge_valve_state[NUM_SHOOTERS];
+boolean purge_init[NUM_SHOOTERS];
 
 
 int delay_knob_min_value, delay_knob_max_value;
@@ -90,7 +91,8 @@ void setup() {
     pinMode(shooters[i].button_pin, INPUT);
     digitalWrite(shooters[i].button_pin, HIGH);  // This activates the internal pull-up resistor.
     last_button_state[i] = (digitalRead(shooters[i].button_pin) == LOW);
-    button_off_time[i] = millis() - 1000; // Prevents purge valves from firing on boot.
+    button_off_time[i] = millis() - 1500; // Prevents purge valves from firing on boot.
+    purge_init[i] = false;
   }
 }
 
@@ -113,19 +115,20 @@ void loop() {
   for (int i=0; i<NUM_SHOOTERS; i++) {
     boolean button_pressed = ( digitalRead(shooters[i].button_pin) == LOW );// LOW means the switch is closed.
     if (button_pressed) {
+      purge_init[i] = true;
       led_2 = true;
       // send the signal immediately if this is the first loop since state transition
       // send the signal periodically otherwise.
       fuelSignal(i, 1, !last_button_state[i]); // fuel on
       purgeSignal(i, 0, !last_button_state[i]); // purge off
     } else {
-      if ( last_button_state[i] ) { // button was on but is now off
+      if ( last_button_state[i]) { // button was on but is now off
         led_3 = true;
         button_off_time[i] = millis();
         fuelSignal(i, 0, true);
         purgeSignal(i, 1, true); 
       } else { // button was and is off
-        if ( (button_off_time[i] + purge_delay) > millis() ) {
+        if ( (button_off_time[i] + purge_delay) > millis() && purge_init[i]) {
           led_3 = true;
           purgeSignal(i, 1, false);
         } else {
